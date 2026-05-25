@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notion業務サポートAI｜Bot Prototype</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: #f7f6f3;
+      color: #222;
+      padding: 48px 24px;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      background: #fff;
+      border: 1px solid #e8e4dc;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.04);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f0eee8;
+      border-radius: 999px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      color: #555;
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .lead {
+      font-size: 16px;
+      line-height: 1.9;
+      color: #555;
+      max-width: 680px;
+    }
+
+    .dummy-section {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e8e4dc;
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.7;
+    }
+
+    /* Floating Bot */
+    .bot-launcher {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.16);
+      cursor: pointer;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .bot-launcher:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.2);
+    }
+
+    .bot-bubble-label {
+      position: fixed;
+      right: 112px;
+      bottom: 42px;
+      background: #fff;
+      border: 1px solid #e4e0d8;
+      border-radius: 18px;
+      padding: 13px 16px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      font-size: 15px;
+      z-index: 999;
+      animation: floatIn 0.35s ease;
+      white-space: nowrap;
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-panel {
+      position: fixed;
+      right: 28px;
+      bottom: 112px;
+      width: min(390px, calc(100vw - 32px));
+      height: 560px;
+      background: #fff;
+      border: 1px solid #e4e0d8;
+      border-radius: 24px;
+      box-shadow: 0 20px 70px rgba(0,0,0,0.2);
+      z-index: 1001;
+      display: none;
+      overflow: hidden;
+    }
+
+    .chat-panel.open {
+      display: flex;
+      flex-direction: column;
+      animation: pop 0.24s ease;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .chat-header {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid #eee9df;
+      background: linear-gradient(180deg, #fff, #faf9f6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .chat-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: #222;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .chat-title strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .chat-title span {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .close-btn {
+      border: none;
+      background: #f2f0ea;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .chat-body {
+      flex: 1;
+      padding: 18px;
+      overflow-y: auto;
+      background: #fbfaf8;
+    }
+
+    .message {
+      max-width: 88%;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 12px;
+      white-space: pre-line;
+    }
+
+    .message.bot {
+      background: #fff;
+      border: 1px solid #ece7dd;
+      color: #333;
+      border-bottom-left-radius: 6px;
+    }
+
+    .message.user {
+      margin-left: auto;
+      background: #222;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 14px;
+    }
+
+    .quick-actions button {
+      border: 1px solid #ded8cc;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .quick-actions button:hover {
+      background: #f1eee7;
+    }
+
+    .chat-footer {
+      border-top: 1px solid #eee9df;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-row input {
+      flex: 1;
+      border: 1px solid #ded8cc;
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-row input:focus {
+      border-color: #222;
+    }
+
+    .send-btn {
+      border: none;
+      background: #222;
+      color: #fff;
+      border-radius: 999px;
+      padding: 12px 15px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .external-link {
+      margin-top: 10px;
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      text-decoration: none;
+    }
+
+    .external-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 520px) {
+      .bot-bubble-label {
+        display: none;
+      }
+
+      .chat-panel {
+        right: 16px;
+        bottom: 100px;
+        height: 70vh;
+      }
+
+      .bot-launcher {
+        right: 18px;
+        bottom: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">🤖 Notion顧客サポートBot｜Prototype</div>
+      <h1>Notionページに埋め込む<br>AIサポートBotの試作</h1>
+      <p class="lead">
+        右下のボタンを押すと、クライアント向けのAIサポート画面が開きます。
+        現時点ではフロント側の動作確認用プロトタイプです。後からカスタムGPTのURLやAPI連携に差し替えられます。
+      </p>
+    </section>
+
+    <section class="dummy-section">
+      <div class="card">
+        <h3>今日やること</h3>
+        <p>利用者が最初に確認する作業一覧を想定したカードです。</p>
+      </div>
+      <div class="card">
+        <h3>操作マニュアル</h3>
+        <p>基本操作、追加方法、更新方法などをまとめるエリアです。</p>
+      </div>
+      <div class="card">
+        <h3>FAQ</h3>
+        <p>よくある質問をまとめ、Botと連動させる想定です。</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="bot-bubble-label" id="botLabel">このページについてチャットする ⌘J</div>
+
+  <button class="bot-launcher" id="botLauncher" aria-label="AIサポートを開く">
+    🤖
+  </button>
+
+  <section class="chat-panel" id="chatPanel" aria-label="AIサポートチャット">
+    <header class="chat-header">
+      <div class="chat-title">
+        <div class="avatar">AI</div>
+        <div>
+          <strong>Notion業務サポートAI</strong>
+          <span>操作説明・FAQ・確認サポート</span>
+        </div>
+      </div>
+      <button class="close-btn" id="closeBtn" aria-label="閉じる">×</button>
+    </header>
+
+    <div class="chat-body" id="chatBody">
+      <div class="message bot">こんにちは。Notion業務サポートAIです。\n\n操作方法・入力方法・表示の確認などをサポートします。\n\n下の例から選ぶか、そのまま質問してください。</div>
+      <div class="quick-actions">
+        <button data-question="使い方を教えて">使い方を教えて</button>
+        <button data-question="新しい情報を追加したい">新しい情報を追加したい</button>
+        <button data-question="表示がおかしいです">表示がおかしいです</button>
+        <button data-question="どこから作業を始めればいいですか？">どこから作業を始めればいいですか？</button>
+        <button data-question="これは何をするページですか？">これは何をするページですか？</button>
+      </div>
+    </div>
+
+    <footer class="chat-footer">
+      <div class="input-row">
+        <input id="chatInput" type="text" placeholder="質問を入力してください" />
+        <button class="send-btn" id="sendBtn">送信</button>
+      </div>
+      <a class="external-link" href="#" onclick="alert('ここにカスタムGPTの共有URLを設定します'); return false;">専用AIを別画面で開く</a>
+    </footer>
+  </section>
+
+  <script>
+    const botLauncher = document.getElementById('botLauncher');
+    const chatPanel = document.getElementById('chatPanel');
+    const closeBtn = document.getElementById('closeBtn');
+    const chatBody = document.getElementById('chatBody');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const botLabel = document.getElementById('botLabel');
+
+    const replies = [
+      {
+        keywords: ['使い方', '始め', '何から'],
+        answer: '【回答】\nまずは「今日やること」または「操作マニュアル」から確認してください。\n\n【操作手順】\n① 左側またはページ上部のメニューを確認\n② 今日確認する項目を開く\n③ 必要な情報を入力・更新する\n\n【確認ポイント】\n・どのページを開いているか\n・何を追加または更新したいか\n・入力欄が空欄になっていないか'
+      },
+      {
+        keywords: ['追加', '新しい', '登録'],
+        answer: '【回答】\n新しい情報を追加する場合は、対象の管理表で「新規」ボタンを押します。\n\n【操作手順】\n① 追加したい管理表を開く\n② 右上または表の下にある「新規」を押す\n③ 必要な入力項目を埋める\n\n【確認ポイント】\n・追加先の管理表が合っているか\n・必須項目が入力されているか\n・担当者や期限が必要な場合は入っているか'
+      },
+      {
+        keywords: ['表示', 'おかしい', '見えない', '消えた'],
+        answer: '【回答】\n表示条件や絞り込みにより、情報が見えなくなっている可能性があります。\n\n【操作手順】\n① 今開いているページ名を確認\n② 表示されているビュー名を確認\n③ 絞り込み条件や表示切替を確認\n\n【確認ポイント】\n・本当に削除されたのか\n・別の表示に切り替わっていないか\n・完了済みや非表示条件に入っていないか'
+      },
+      {
+        keywords: ['期限', '赤', '色'],
+        answer: '【回答】\n期限の色が変わらない場合、日付や状態の入力が影響している可能性があります。\n\n【操作手順】\n① 期限日が入力されているか確認\n② 状態が対象外になっていないか確認\n③ 表示しているビューが正しいか確認\n\n【確認ポイント】\n・期限が空欄ではないか\n・完了済みになっていないか\n・今日の日付との判定条件に合っているか'
+      },
+      {
+        keywords: ['何をする', '何のページ', 'このページ'],
+        answer: '【回答】\nこのページは、利用者が作業内容を確認し、必要な情報を追加・更新するための入口です。\n\n【操作手順】\n① まずページ上部の説明を確認\n② 表示されているカードや表を確認\n③ 必要に応じて情報を追加・更新する\n\n【確認ポイント】\n・このページで確認したい内容\n・追加したい情報の種類\n・現在どこで止まっているか'
+      }
+    ];
+
+    function openChat() {
+      chatPanel.classList.add('open');
+      botLabel.style.display = 'none';
+      setTimeout(() => chatInput.focus(), 100);
+    }
+
+    function closeChat() {
+      chatPanel.classList.remove('open');
+      botLabel.style.display = 'block';
+    }
+
+    function addMessage(text, sender) {
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+      div.textContent = text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function getBotReply(question) {
+      const normalized = question.toLowerCase();
+      const matched = replies.find(item => item.keywords.some(keyword => normalized.includes(keyword)));
+
+      if (matched) return matched.answer;
+
+      return '【回答】\n確認できる情報が不足しています。\n\n【確認したいこと】\n・どのページを開いていますか？\n・何を押しましたか？\n・何をしようとしていましたか？\n・画面には何と表示されていますか？\n\n上記を教えていただけると、次の確認手順をご案内できます。';
+    }
+
+    function sendMessage(text) {
+      const question = text.trim();
+      if (!question) return;
+
+      addMessage(question, 'user');
+      chatInput.value = '';
+
+      setTimeout(() => {
+        addMessage(getBotReply(question), 'bot');
+      }, 450);
+    }
+
+    botLauncher.addEventListener('click', openChat);
+    closeBtn.addEventListener('click', closeChat);
+    sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+
+    chatInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') sendMessage(chatInput.value);
+    });
+
+    document.querySelectorAll('[data-question]').forEach(button => {
+      button.addEventListener('click', () => sendMessage(button.dataset.question));
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        openChat();
+      }
+      if (event.key === 'Escape') closeChat();
+    });
+  </script>
+</body>
+</html>
